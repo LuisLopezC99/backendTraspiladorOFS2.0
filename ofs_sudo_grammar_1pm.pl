@@ -1,3 +1,4 @@
+%%% Archivo: ofs_sudo_grammar_1pm.pl %%%%%%%%%%%%%%%%%
 /*
 
 
@@ -35,40 +36,44 @@ generator(StatementList, JSCodeString) :-
     options(splash, Splash),
     with_output_to(string(Str), (
         generate_line_comment(comment(Splash)),
+        write_ast(StatementList),
         forall(member(Statement, StatementList), generate_statement(Statement))
     )),
-    string_concat(Str, "\n", JSCodeString). % Añadir un salto de línea final.
+    string_concat(Str, "\n", JSCodeString).
 
-generate_statement(declaration(Type, id(I), Expr)) :- !,
-    extract_atom(I, IStr),
+% Función para escribir el AST
+write_ast(StatementList) :-
+    format('/* AST: ~w */\n', [StatementList]).
+
+% Generación de diferentes tipos de declaraciones y expresiones
+
+generate_statement(declaration(Type, id(I), Expr)) :-
     generate_expression(Expr, ExprStr),
-    format('~s ~s = ~s;\n', [Type, IStr, ExprStr]).
+    format('~s ~s = ~s;\n', [Type, I, ExprStr]).
+
+
+% Caso por defecto para manejar AST no reconocidos
 generate_statement(S) :-
-    format('Unrecognized statement: ~w\n', [S]).
+    write_unrecognized_statement(S).
+	
+generate_expression(id(X), X) :- !.
+generate_expression(literal(int(N)), Str) :- number_string(N, Str), !.
+generate_expression(Expr, ExprStr) :-
+    Expr =.. [Op, Left, Right],
+    generate_expression(Left, LeftStr),
+    generate_expression(Right, RightStr),
+    format(atom(ExprStr), '~s ~s ~s', [LeftStr, Op, RightStr]).	
+
+
+% Función para manejar AST no reconocidos
+write_unrecognized_statement(S) :-
+    format('/* Unrecognized statement: ~w */\n', [S]).
+
+% ... funciones para generar expresiones ...
 
 generate_line_comment(comment(Comment)) :-
     format('// ~s\n', [Comment]).
 
-% Función auxiliar para generar la cadena de una expresión
-generate_expression(id(id(X)), XStr) :- !, extract_atom(X, XStr).
-
-generate_expression(add(Left, Right), ExprStr) :- 
-    generate_expression(Left, LeftStr),
-    generate_expression(Right, RightStr),
-    format(atom(ExprStr), '~s + ~s', [LeftStr, RightStr]).
-	
-generate_expression(sub(Left, Right), ExprStr) :- 
-    generate_expression(Left, LeftStr),
-    generate_expression(Right, RightStr),
-    format(atom(ExprStr), '~s - ~s', [LeftStr, RightStr]).
-	
-% ... agregar casos para otras operaciones aritméticas ...
-
-% Función auxiliar para extraer el átomo de un término id(X)
-extract_atom(id(Atom), AtomString) :- 
-    atom_string(Atom, AtomString).
-extract_atom(Atom, AtomString) :- 
-    atom_string(Atom, AtomString).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% PARSER %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ofs_parser([]) --> [].
@@ -90,19 +95,53 @@ declaration_type(var) --> var.
 right_side(E) --> assignment, expr(E).
 right_side(undefined) --> [].
 
-% Expresiones: Sumas y restas
-expr(Expr) --> monomio(M), expr_tail(M, Expr).
-expr_tail(Acc, Expr) --> add_op(Op), monomio(M), { NewAcc =.. [Op, Acc, M] }, expr_tail(NewAcc, Expr).
-expr_tail(Acc, Acc) --> [].
+% expr( I ) --> ident(I).
+% expr(Num) --> number(Num).
+expr(E) --> simple_expr(E).
 
-% Monomio: Por ahora, trataremos el monomio simplemente como un factor
-% Esta regla se expandirá más adelante para incluir multiplicación y división
-monomio(Factor) --> factor(Factor).
+%%%% expr -> arrow_expr
+expr(E) --> arrow_expr(E).
 
-% Factores: Identificadores, números o expresiones entre paréntesis
-factor(id(Id)) --> ident(Id).
-factor(num(N)) --> integer(N).
-factor(Expr) --> "(", expr(Expr), ")".
+%%%% arrow_expr -> pipe_expr ("->" expr)*
+arrow_expr(E) --> pipe_expr(P), arrow_expr_tail(P, E).
+arrow_expr_tail(Prev, E) --> arrow_op, expr(Ex), { NewExpr = arrow(Prev, Ex) }, arrow_expr_tail(NewExpr, E).
+arrow_expr_tail(E, E) --> [].
+
+%%%% simple_expr -> monom (("+"|"-")? monom)*
+simple_expr(E) --> monom(M), simple_expr_tail(M, E).
+simple_expr_tail(Prev, E) --> add_sub_op(Op), monom(M), { NewExpr =.. [Op, Prev, M] }, simple_expr_tail(NewExpr, E).
+simple_expr_tail(E, E) --> [].
+
+%%%% pipe_expr -> simple_expr (">>" expr)*
+pipe_expr(E) --> simple_expr(S), pipe_expr_tail(S, E).
+pipe_expr_tail(Prev, E) --> pipe_op, expr(Ex), { NewExpr = pipe(Prev, Ex) }, pipe_expr_tail(NewExpr, E).
+pipe_expr_tail(E, E) --> [].
+
+%%%% monom -> factor (("*"|"/")? factor)*
+monom(M) --> factor(F), monom_tail(F, M).
+monom_tail(Prev, M) --> mult_div_op(Op), factor(F), { NewExpr =.. [Op, Prev, F] }, monom_tail(NewExpr, M).
+monom_tail(M, M) --> [].
+
+%%%% factor -> cal | literal | "(" expr ")" | "-" expr | expr_list
+factor(F) --> cal(F).
+factor(literal(L)) --> literal(L).
+factor(expr(E)) --> left_paren, expr(E), right_paren.
+factor(neg_expr(E)) --> "-", expr(E).
+factor(F) --> expr_list(F).
+
+%%%% cal -> ident ("(" expr_sequence? ")")?
+cal(cal(Id, Args)) --> ident(Id), left_paren, expr_sequence(Args), right_paren.
+cal(Id) --> ident(Id).
+
+%%%% expr_list -> "[" expr_sequence? "]"
+expr_list(L) --> left_bracket, optional_expr_sequence(L), right_bracket.
+optional_expr_sequence([]) --> [].
+optional_expr_sequence(L) --> expr_sequence(L).
+
+%%%% expr_sequence -> expr ("," expr)*
+expr_sequence([E|Es]) --> expr(E), expr_sequence_tail(Es).
+expr_sequence_tail([E|Es]) --> comma, expr(E), expr_sequence_tail(Es).
+expr_sequence_tail([]) --> [].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% UTILS %%%%%%%%%%%%%%%%%%%%%%%
 /*
@@ -116,12 +155,10 @@ eliminate_null([S | R], [S | RWN] ) :- !, eliminate_null(R, RWN).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%% TOKENIZER = LEXER %%%%%%%%%%%%%%%%%%%%%
 
-ident( id(Id) ) --> [X], { member(X, [36,95]);  char_type(X, alpha) }, ident_tail(Tail), { atom_codes(Id, [X|Tail]) }.
-
+%% ident( id(Id) ) --> [X], { member(X, [36,95]);  char_type(X, alpha) }, ident_tail(Tail), { atom_codes(Id, [X|Tail]) }.
+ident(id(X)) --> [C], { char_type(C, alpha) }, ident_tail(Tail), { atom_codes(X, [C|Tail]) }.
 ident_tail([]) --> [].
 ident_tail([X|Tail]) --> [X], { member(X, [36,95]); char_type(X, alnum) }, ident_tail(Tail).
-
-integer( int(666) ) --> "666".
 
 const --> spaces, "const", space, spaces.
 let --> spaces, "let", space, spaces.
@@ -130,12 +167,46 @@ var --> spaces, "var", space, spaces.
 space --> " ";"\t";"\n";"\r".
 
 assignment --> spaces, "=", spaces.
-
 semicolon --> spaces, ";", spaces.
+comma --> spaces, ",", spaces.
+left_bracket --> spaces, "[", spaces.
+right_bracket --> spaces, "]", spaces.
+left_paren --> spaces, "(", spaces.
+right_paren --> spaces, ")", spaces.
+
+mult_div_op('*') --> "*", !.
+mult_div_op('/') --> "/", !.
+add_sub_op('+') --> "+", !.
+add_sub_op('-') --> "-", !.
+pipe_op --> ">>".
+arrow_op --> "->".
 
 spaces --> space, spaces.
 spaces --> [].
 
-% Operadores de suma y resta
-add_op(add) --> "+".
-add_op(sub) --> "-".
+literal(id(Id)) --> ident(Id).
+literal(Num) --> number(Num).
+literal(Bool) --> boolean(Bool).
+literal(null) --> "null".
+literal(undefined) --> "undefined".
+
+number(int(N)) --> optional_sign(Sign), digits(Ds), 
+                   { maplist(char_code, CharsDs, Ds), 
+                     (Sign = '', number_chars(N, CharsDs); 
+                      number_chars(N, [Sign|CharsDs])) }.
+number(int(N)) --> digits(Ds), 
+                   { maplist(char_code, CharsDs, Ds), 
+                     number_chars(N, CharsDs) }.
+
+optional_sign('-') --> "-", !.
+optional_sign('+') --> "+", !.
+optional_sign('') --> [].
+
+digits([D|T]) --> digit(D), digits(T).
+digits([D]) --> digit(D).
+
+digit(D) --> [D], { char_type(D, digit) }.
+
+
+boolean(true) --> "true".
+boolean(false) --> "false".
