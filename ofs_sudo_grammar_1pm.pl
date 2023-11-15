@@ -51,10 +51,17 @@ generate_line_comment(comment(Comment)) :-
 
 % Función auxiliar para generar la cadena de una expresión
 generate_expression(id(id(X)), XStr) :- !, extract_atom(X, XStr).
+
 generate_expression(add(Left, Right), ExprStr) :- 
     generate_expression(Left, LeftStr),
     generate_expression(Right, RightStr),
     format(atom(ExprStr), '~s + ~s', [LeftStr, RightStr]).
+	
+generate_expression(sub(Left, Right), ExprStr) :- 
+    generate_expression(Left, LeftStr),
+    generate_expression(Right, RightStr),
+    format(atom(ExprStr), '~s - ~s', [LeftStr, RightStr]).
+	
 % ... agregar casos para otras operaciones aritméticas ...
 
 % Función auxiliar para extraer el átomo de un término id(X)
@@ -97,10 +104,6 @@ factor(id(Id)) --> ident(Id).
 factor(num(N)) --> integer(N).
 factor(Expr) --> "(", expr(Expr), ")".
 
-% Operadores de suma y resta
-add_op(add) --> "+".
-add_op(sub) --> "-".
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% UTILS %%%%%%%%%%%%%%%%%%%%%%%
 /*
 Example:
@@ -132,3 +135,7 @@ semicolon --> spaces, ";", spaces.
 
 spaces --> space, spaces.
 spaces --> [].
+
+% Operadores de suma y resta
+add_op(add) --> "+".
+add_op(sub) --> "-".
