@@ -1,1 +1,4 @@
-var c = 3*a+2-4;
+  
+  import { test1, test2 } from 'module-name';
+    (c+d)/ab*4;
+let x;

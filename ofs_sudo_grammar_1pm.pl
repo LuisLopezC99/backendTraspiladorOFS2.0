@@ -51,10 +51,24 @@ generate_statement(declaration(Type, id(I), Expr)) :-
     generate_expression(Expr, ExprStr),
     format('~s ~s = ~s;\n', [Type, I, ExprStr]).
 
+generate_statement(import(Imports, From)) :-
+    generate_imports(Imports, ImportsStr),
+    format(atom(ImportStr), 'import ~s from "~s";\n', [ImportsStr, From]),
+    write(ImportStr).
 
-% Caso por defecto para manejar AST no reconocidos
+%%%%%% Caso por defecto para manejar AST no reconocidos %%%%%
 generate_statement(S) :-
     write_unrecognized_statement(S).
+	
+
+generate_imports([Id], IdStr) :-
+    generate_expression(Id, IdStr), !.
+generate_imports(Ids, IdsStr) :-
+    Ids = [_|_], % Asegurarse de que hay más de un elemento
+    findall(IdStr, (member(Id, Ids), generate_expression(Id, IdStr)), IdStrs),
+    atomic_list_concat(IdStrs, ', ', InnerIdsStr),
+    format(atom(IdsStr), '{~s}', [InnerIdsStr]).	
+	
 	
 generate_expression(id(X), X) :- !.
 generate_expression(literal(int(N)), Str) :- number_string(N, Str), !.
@@ -77,10 +91,30 @@ generate_line_comment(comment(Comment)) :-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% PARSER %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ofs_parser([]) --> [].
-ofs_parser([S | RS]) --> (statement(S) ; comment), ofs_parser(RS).
+ofs_parser([S | RS]) --> (import_statement(S) ;statement(S) ; comment), ofs_parser(RS).
 
+
+import_statement(import(Imports, From)) --> import, imported_symbols(Imports), from, string_literal(From).
+
+imported_symbols([Ident|Idents]) --> left_curly, ident(Ident), imported_symbols_tail(Idents), right_curly.
+imported_symbols([Ident]) --> ident(Ident).
+
+imported_symbols_tail([Ident|Idents]) --> comma, ident(Ident), imported_symbols_tail(Idents).
+imported_symbols_tail([]) --> [].
+
+
+string_literal(Str) --> single_quoted_string(Str), !.
+string_literal(Str) --> double_quoted_string(Str).
+
+single_quoted_string(Str) --> single_quote, string_chars(StrChars), single_quote, { atom_chars(Str, StrChars) }.
+double_quoted_string(Str) --> double_quote, string_chars(StrChars), double_quote, { atom_chars(Str, StrChars) }.
+
+
+string_chars([Char|Chars]) --> [Char], { Char \= '\'' }, string_chars(Chars).
+string_chars([]) --> [].
 
 statement(declaration(Type, Ident, RS)) --> declaration_type(Type), ident(Ident), right_side(RS).
+statement(expression(E)) --> spaces,expr(E),semicolon.
 statement(null) --> semicolon.
 
 comment --> "//", rest_of_line.
@@ -92,7 +126,7 @@ declaration_type(let) --> let.
 declaration_type(var) --> var.
 
 
-right_side(E) --> assignment, expr(E).
+right_side(E) --> assignment, expr(E),semicolon.
 right_side(undefined) --> [].
 
 % expr( I ) --> ident(I).
@@ -155,25 +189,32 @@ eliminate_null([S | R], [S | RWN] ) :- !, eliminate_null(R, RWN).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%% TOKENIZER = LEXER %%%%%%%%%%%%%%%%%%%%%
 
-%% ident( id(Id) ) --> [X], { member(X, [36,95]);  char_type(X, alpha) }, ident_tail(Tail), { atom_codes(Id, [X|Tail]) }.
 ident(id(X)) --> [C], { char_type(C, alpha) }, ident_tail(Tail), { atom_codes(X, [C|Tail]) }.
 ident_tail([]) --> [].
 ident_tail([X|Tail]) --> [X], { member(X, [36,95]); char_type(X, alnum) }, ident_tail(Tail).
+
 
 const --> spaces, "const", space, spaces.
 let --> spaces, "let", space, spaces.
 var --> spaces, "var", space, spaces.
 
-space --> " ";"\t";"\n";"\r".
+
+
+% Palabras clave para import_statement
+import --> spaces, "import", spaces.
+from --> spaces, "from", spaces.
 
 assignment --> spaces, "=", spaces.
 semicolon --> spaces, ";", spaces.
 comma --> spaces, ",", spaces.
 left_bracket --> spaces, "[", spaces.
 right_bracket --> spaces, "]", spaces.
+left_curly --> spaces, "{", spaces.
+right_curly --> spaces, "}", spaces.
 left_paren --> spaces, "(", spaces.
 right_paren --> spaces, ")", spaces.
-
+single_quote --> "'".
+double_quote --> "\"".
 mult_div_op('*') --> "*", !.
 mult_div_op('/') --> "/", !.
 add_sub_op('+') --> "+", !.
@@ -181,6 +222,7 @@ add_sub_op('-') --> "-", !.
 pipe_op --> ">>".
 arrow_op --> "->".
 
+space --> " ";"\t";"\n";"\r".
 spaces --> space, spaces.
 spaces --> [].
 
