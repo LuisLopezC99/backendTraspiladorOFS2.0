@@ -50,6 +50,10 @@ write_ast(StatementList) :-
 generate_statement(declaration(Type, id(I), Expr)) :-
     generate_expression(Expr, ExprStr),
     format('~s ~s = ~s;\n', [Type, I, ExprStr]).
+	
+generate_statement(expr(Expr)) :-
+    generate_expression(Expr, ExprStr),
+    format('~s;\n', [ExprStr]).
 
 generate_statement(import(Imports, From)) :-
     generate_imports(Imports, ImportsStr),
@@ -71,12 +75,38 @@ generate_imports(Ids, IdsStr) :-
 	
 	
 generate_expression(id(X), X) :- !.
+
 generate_expression(literal(int(N)), Str) :- number_string(N, Str), !.
+
+
 generate_expression(Expr, ExprStr) :-
     Expr =.. [Op, Left, Right],
     generate_expression(Left, LeftStr),
     generate_expression(Right, RightStr),
     format(atom(ExprStr), '~s ~s ~s', [LeftStr, Op, RightStr]).	
+	
+% Generación de expresiones con paréntesis
+generate_expression(expr_paren(InnerExpr), ExprStr) :-
+    generate_expression(InnerExpr, InnerExprStr),
+    format(atom(ExprStr), ' ( ~s )', [InnerExprStr]).
+	
+	
+% Manejo de llamadas a métodos
+generate_expression(method(Object, MethodCall), MethodStr) :-
+    generate_expression(Object, ObjectStr),
+    generate_method_call(MethodCall, MethodCallStr),
+    format(atom(MethodStr), '~s.~s', [ObjectStr, MethodCallStr]).
+
+% Generación de la llamada al método
+generate_method_call(cal(Method, Args), CallStr) :-
+    generate_expression(Method, MethodStr),
+    generate_arguments(Args, ArgsStr),
+    format(atom(CallStr), '~s(~s)', [MethodStr, ArgsStr]).
+
+% Generación de argumentos de la función
+generate_arguments(Args, ArgsStr) :-
+    maplist(generate_expression, Args, ArgsStrList),
+    atomic_list_concat(ArgsStrList, ', ', ArgsStr).
 
 
 % Función para manejar AST no reconocidos
@@ -114,7 +144,7 @@ string_chars([Char|Chars]) --> [Char], { Char \= '\'' }, string_chars(Chars).
 string_chars([]) --> [].
 
 statement(declaration(Type, Ident, RS)) --> declaration_type(Type), ident(Ident), right_side(RS).
-statement(expression(E)) --> spaces,expr(E),semicolon.
+statement(expr(E)) --> spaces,expr(E),semicolon.
 statement(null) --> semicolon.
 
 comment --> "//", rest_of_line.
@@ -159,7 +189,8 @@ monom_tail(M, M) --> [].
 %%%% factor -> cal | literal | "(" expr ")" | "-" expr | expr_list
 factor(F) --> cal(F).
 factor(literal(L)) --> literal(L).
-factor(expr(E)) --> left_paren, expr(E), right_paren.
+factor(method(L,F)) --> literal(L),point_op, factor(F).
+factor(expr_paren(E)) --> left_paren, expr(E), right_paren.
 factor(neg_expr(E)) --> "-", expr(E).
 factor(F) --> expr_list(F).
 
@@ -213,20 +244,21 @@ left_curly --> spaces, "{", spaces.
 right_curly --> spaces, "}", spaces.
 left_paren --> spaces, "(", spaces.
 right_paren --> spaces, ")", spaces.
-single_quote --> "'".
-double_quote --> "\"".
-mult_div_op('*') --> "*", !.
-mult_div_op('/') --> "/", !.
-add_sub_op('+') --> "+", !.
-add_sub_op('-') --> "-", !.
-pipe_op --> ">>".
-arrow_op --> "->".
+single_quote --> spaces,"'", spaces.
+double_quote --> spaces,"\"", spaces.
+mult_div_op('*') --> spaces,"*", spaces, !.
+mult_div_op('/') --> spaces,"/", spaces, !.
+add_sub_op('+') --> spaces,"+", spaces, !.
+add_sub_op('-') --> spaces,"-", spaces, !.
+pipe_op --> spaces,">>", spaces.
+arrow_op --> spaces,"->", spaces.
+point_op --> ".".
 
 space --> " ";"\t";"\n";"\r".
 spaces --> space, spaces.
 spaces --> [].
 
-literal(id(Id)) --> ident(Id).
+literal(Id) --> ident(Id).
 literal(Num) --> number(Num).
 literal(Bool) --> boolean(Bool).
 literal(null) --> "null".
@@ -240,8 +272,8 @@ number(int(N)) --> digits(Ds),
                    { maplist(char_code, CharsDs, Ds), 
                      number_chars(N, CharsDs) }.
 
-optional_sign('-') --> "-", !.
-optional_sign('+') --> "+", !.
+optional_sign('-') --> spaces,"-", spaces, !.
+optional_sign('+') --> spaces,"+", spaces, !.
 optional_sign('') --> [].
 
 digits([D|T]) --> digit(D), digits(T).
