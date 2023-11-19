@@ -1,9 +1,3 @@
+const FOUR = "4" ;
 
-var a= 2;
-
-2   + 2;
-
-
-3*(4+4);
-
-avc.fg(it,2);
+printIt('ten= ' + ten);

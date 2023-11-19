@@ -78,6 +78,16 @@ generate_expression(id(X), X) :- !.
 
 generate_expression(literal(int(N)), Str) :- number_string(N, Str), !.
 
+generate_expression(literal(str(S)), Str) :- format(atom(Str), '"~w"', [S]), !.  % Añadido manejo de literales string
+
+generate_expression(Expr, ExprStr) :-
+    Expr =.. [Op, Left, Right],
+    generate_expression(Left, LeftStr),
+    generate_expression(Right, RightStr),
+    ( Op = arrow -> % Añadido manejo de expresiones de tipo flecha
+        format(atom(ExprStr), '~s --> ~s', [LeftStr, RightStr])
+    ; format(atom(ExprStr), '~s ~s ~s', [LeftStr, Op, RightStr]) ).
+
 
 generate_expression(Expr, ExprStr) :-
     Expr =.. [Op, Left, Right],
@@ -122,6 +132,7 @@ generate_line_comment(comment(Comment)) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% PARSER %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ofs_parser([]) --> [].
 ofs_parser([S | RS]) --> (import_statement(S) ;statement(S) ; comment), ofs_parser(RS).
+ofs_parser([]) --> spaces, !.
 
 
 import_statement(import(Imports, From)) --> import, imported_symbols(Imports), from, string_literal(From).
@@ -133,23 +144,23 @@ imported_symbols_tail([Ident|Idents]) --> comma, ident(Ident), imported_symbols_
 imported_symbols_tail([]) --> [].
 
 
-string_literal(Str) --> single_quoted_string(Str), !.
-string_literal(Str) --> double_quoted_string(Str).
-
-single_quoted_string(Str) --> single_quote, string_chars(StrChars), single_quote, { atom_chars(Str, StrChars) }.
-double_quoted_string(Str) --> double_quote, string_chars(StrChars), double_quote, { atom_chars(Str, StrChars) }.
-
-
-string_chars([Char|Chars]) --> [Char], { Char \= '\'' }, string_chars(Chars).
-string_chars([]) --> [].
-
 statement(declaration(Type, Ident, RS)) --> declaration_type(Type), ident(Ident), right_side(RS).
 statement(expr(E)) --> spaces,expr(E),semicolon.
 statement(null) --> semicolon.
 
-comment --> "//", rest_of_line.
+
+comment --> spaces,"//", rest_of_line.
+
+% Reconocimiento de comentarios de varias líneas
+comment --> spaces, "/*", block_comment_content.
+
+block_comment_content --> "*/", !.
+block_comment_content --> [_], block_comment_content.
+
 rest_of_line --> "\n", !.
 rest_of_line --> [_], rest_of_line.
+
+
 
 declaration_type(const) --> const.
 declaration_type(let) --> let.
@@ -263,6 +274,18 @@ literal(Num) --> number(Num).
 literal(Bool) --> boolean(Bool).
 literal(null) --> "null".
 literal(undefined) --> "undefined".
+literal(str(Str)) --> string_literal(Str).
+
+
+string_literal(Str) --> single_quoted_string(Str).
+string_literal(Str) --> double_quoted_string(Str).
+
+single_quoted_string(Str) --> single_quote, string_chars(StrChars), single_quote, { atom_chars(Str, StrChars) }.
+double_quoted_string(Str) --> double_quote, string_chars(StrChars), double_quote, { atom_chars(Str, StrChars) }.
+
+
+string_chars([Char|Chars]) --> [Char], { Char \= '\'' }, string_chars(Chars).
+string_chars([]) --> [].
 
 number(int(N)) --> optional_sign(Sign), digits(Ds), 
                    { maplist(char_code, CharsDs, Ds), 
