@@ -174,9 +174,22 @@ right_side(undefined) --> [].
 % expr(Num) --> number(Num).
 expr(E) --> simple_expr(E).
 
+% Iterable
+expr(A) --> ofs_expression_iteration(A).
+expr(pipe(N, A)) --> ident(N), pipe(A).
+
 %%%% expr -> arrow_expr
 expr(E) --> arrow_expr(E).
 
+%OFS
+ofs_expression_iteration(pipe(cal(iterate(InitialExpr, IterId, expr(IterationExpr))),Z)) --> left_bracket, "*",spaces, number(InitialExpr), comma, ident(IterId), arrow_op, expr(IterationExpr), right_bracket, pipe(Z).
+ofs_expression(cal(filter(FilterId, expr(FilterExpr)))) --> left_bracket, "?",spaces, ident(FilterId), arrow_op, expr(FilterExpr), right_bracket.
+ofs_expression(cal(map(MapId, expr(MapExpr)))) --> left_bracket, ">",spaces, ident(MapId), arrow_op, expr(MapExpr), right_bracket.
+ofs_expression(cal(cut(N))) --> left_bracket, "!",spaces, number(N), right_bracket.
+
+
+pipe([]) --> [].
+pipe(pipe(Z,A)) --> pipe_op, ofs_expression(Z), pipe(A).
 %%%% arrow_expr -> pipe_expr ("->" expr)*
 arrow_expr(E) --> pipe_expr(P), arrow_expr_tail(P, E).
 arrow_expr_tail(Prev, E) --> arrow_op, expr(Ex), { NewExpr = arrow(Prev, Ex) }, arrow_expr_tail(NewExpr, E).
