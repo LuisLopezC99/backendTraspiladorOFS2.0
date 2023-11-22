@@ -1,16 +1,14 @@
-
-const x = "9abc";
-test('test');
-
+/*
+const x = "9abc";  //comentario
 
 
-
-
-
-
+*/
+log("sdf");
+printIt(some_list.at(-1) + "hola");
 
 /*
-
+generator para:
+console.log(it);
 expr(
 	method(
 		id(console),
@@ -23,10 +21,22 @@ expr(
 		)
 	)
 )
-
 generador para:
-log(it);
-expr(cal(id(log),[id(it)]))
+test('test');
+expr(
+	cal(
+		id(test),
+		[
+			literal(
+				str(test)
+			)
+		]
+	)
+)
+
+
+
+se cicla si hay un comentario despues de console.log('abc');
 
 */
 
