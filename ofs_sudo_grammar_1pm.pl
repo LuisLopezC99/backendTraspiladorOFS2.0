@@ -74,6 +74,10 @@ generate_imports(Ids, IdsStr) :-
     format(atom(IdsStr), '{~s}', [InnerIdsStr]).	
 	
 % Manejo de llamadas a métodos
+generate_expression(method(Object, id(Method)), MethodStr) :-
+    generate_expression(Object, ObjectStr),
+    format(atom(MethodStr), '~s.~s', [ObjectStr, Method]).
+
 generate_expression(method(Object, MethodCall), MethodStr) :-
     MethodCall = method(_, _),
     generate_expression(Object, ObjectStr),

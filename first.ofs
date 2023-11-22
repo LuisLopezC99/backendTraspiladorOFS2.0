@@ -1,5 +1,5 @@
-let a = text(a);
-console.log.text(a);
+let a = text.a(n+2);
+console.a;
 
 //const nats = [* 0, n -> n + 1];
 
