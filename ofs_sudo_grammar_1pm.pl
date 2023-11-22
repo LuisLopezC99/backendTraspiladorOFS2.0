@@ -73,6 +73,23 @@ generate_imports(Ids, IdsStr) :-
     atomic_list_concat(IdStrs, ', ', InnerIdsStr),
     format(atom(IdsStr), '{~s}', [InnerIdsStr]).	
 	
+% Manejo de llamadas a métodos
+generate_expression(method(Object, MethodCall), MethodStr) :-
+    MethodCall = method(_, _),
+    generate_expression(Object, ObjectStr),
+    generate_expression(MethodCall, MethodCallStr),
+    format(atom(MethodStr), '~s.~s', [ObjectStr, MethodCallStr]).
+	
+generate_expression(method(Object, MethodCall), MethodStr) :-
+    MethodCall = cal(_, _),
+    generate_expression(Object, ObjectStr),
+    generate_method_call(MethodCall, MethodCallStr),
+    format(atom(MethodStr), '~s.~s', [ObjectStr, MethodCallStr]).
+	
+generate_expression(cal(Method, Args), CallStr) :-
+    generate_expression(Method, MethodStr),
+    generate_arguments(Args, ArgsStr),
+    format(atom(CallStr), '~s(~s)', [MethodStr, ArgsStr]).
 	
 generate_expression(id(X), X) :- !.
 
@@ -101,15 +118,7 @@ generate_expression(expr_paren(InnerExpr), ExprStr) :-
     format(atom(ExprStr), ' ( ~s )', [InnerExprStr]).
 	
 	
-% Manejo de llamadas a métodos
-generate_expression(method(Object, MethodCall), MethodStr) :-
-    generate_expression(Object, ObjectStr),
-    generate_method_call(MethodCall, MethodCallStr),
-    format(atom(MethodStr), '~s.~s', [ObjectStr, MethodCallStr]).
 
-generate_expression(MethodCall, CallStr) :-
-    generate_method_call(MethodCall, MethodCallStr),
-    format(atom(CallStr), '~s', [MethodCallStr]).
 
 % Generación de la llamada al método
 generate_method_call(cal(Method, Args), CallStr) :-

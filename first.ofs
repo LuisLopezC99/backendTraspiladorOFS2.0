@@ -1,42 +1,7 @@
-/*
-const x = "9abc";  //comentario
+let a = text(a);
+console.log.text(a);
+
+//const nats = [* 0, n -> n + 1];
 
 
-*/
-log("sdf");
-printIt(some_list.at(-1) + "hola");
-
-/*
-generator para:
-console.log(it);
-expr(
-	method(
-		id(console),
-		method(
-			id(log),
-			cal(
-				id(a),
-				[id(it)]
-			)
-		)
-	)
-)
-generador para:
-test('test');
-expr(
-	cal(
-		id(test),
-		[
-			literal(
-				str(test)
-			)
-		]
-	)
-)
-
-
-
-se cicla si hay un comentario despues de console.log('abc');
-
-*/
 
