@@ -106,6 +106,7 @@ generate_expression(method(Object, MethodCall), MethodStr) :-
     generate_expression(Object, ObjectStr),
     generate_method_call(MethodCall, MethodCallStr),
     format(atom(MethodStr), '~s.~s', [ObjectStr, MethodCallStr]).
+	
 
 % Generación de la llamada al método
 generate_method_call(cal(Method, Args), CallStr) :-

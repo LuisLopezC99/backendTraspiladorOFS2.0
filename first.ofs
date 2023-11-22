@@ -1,3 +1,32 @@
-const FOUR = "4" ;
 
-printIt('ten= ' + ten);
+const x = "9abc";
+test('test');
+
+
+
+
+
+
+
+
+/*
+
+expr(
+	method(
+		id(console),
+		method(
+			id(log),
+			cal(
+				id(a),
+				[id(it)]
+			)
+		)
+	)
+)
+
+generador para:
+log(it);
+expr(cal(id(log),[id(it)]))
+
+*/
+
