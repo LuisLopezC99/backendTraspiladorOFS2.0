@@ -290,8 +290,8 @@ string_chars([]) --> [].
 
 number(int(N)) --> optional_sign(Sign), digits(Ds), 
                    { maplist(char_code, CharsDs, Ds), 
-                     (Sign = '', number_chars(N, CharsDs); 
-                      number_chars(N, [Sign|CharsDs])) }.
+                     (Sign = '', number_chars(N, CharsDs);
+                      Sign \= '', number_chars(N, [Sign|CharsDs])) }.
 number(int(N)) --> digits(Ds), 
                    { maplist(char_code, CharsDs, Ds), 
                      number_chars(N, CharsDs) }.
