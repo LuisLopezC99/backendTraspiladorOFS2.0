@@ -227,14 +227,14 @@ expr(pipe(N, A)) --> ident(N), pipe(A).
 expr(E) --> arrow_expr(E).
 
 %OFS
-ofs_expression_iteration(pipe(cal(iterate(InitialExpr, IterId, expr(IterationExpr))),Z)) --> left_bracket, "*",spaces, number(InitialExpr), comma, ident(IterId), arrow_op, expr(IterationExpr), right_bracket, pipe(Z).
+ofs_expression_iteration(pipe(cal(iterate(InitialExpr, expr(IterationExpr))),Z)) --> left_bracket, "*",spaces, number(InitialExpr), comma, arrow_expr(IterationExpr), right_bracket, pipe(Z).
 ofs_expression_iteration(pipe(cal(iterate(IterId)),Z)) --> left_bracket, "*",spaces,  ident(IterId), right_bracket, pipe(Z).
 
 
-ofs_expression(cal(filter(FilterId, expr(FilterExpr)))) --> left_bracket, "?",spaces, ident(FilterId), arrow_op, expr(FilterExpr), right_bracket.
+ofs_expression(cal(filter(expr(FilterExpr)))) --> left_bracket, "?",spaces, arrow_expr(FilterExpr), right_bracket.
 ofs_expression(cal(filter(FilterId))) --> left_bracket, "?",spaces, ident(FilterId), right_bracket.
 
-ofs_expression(cal(map(MapId, expr(MapExpr)))) --> left_bracket, ">",spaces, ident(MapId), arrow_op, expr(MapExpr), right_bracket.
+ofs_expression(cal(map(expr(MapExpr)))) --> left_bracket, ">",spaces,rrow_expr(MapExpr), right_bracket.
 ofs_expression(cal(map(MapId))) --> left_bracket, ">",spaces, ident(MapId), right_bracket.
 
 ofs_expression(cal(cut(N))) --> left_bracket, "!",spaces, number(N), right_bracket.
@@ -251,7 +251,11 @@ arrow_expr_tail(E, E) --> [].
 %%%% simple_expr -> monom (("+"|"-")? monom)*
 simple_expr(E) --> monom(M), simple_expr_tail(M, E).
 simple_expr_tail(Prev, E) --> add_sub_op(Op), monom(M), { NewExpr =.. [Op, Prev, M] }, simple_expr_tail(NewExpr, E).
+simple_expr_tail(Prev, E) --> relational_operator(Op), monom(M), { NewExpr =.. [Op, Prev, M] }, simple_expr_tail(NewExpr, E).
+simple_expr_tail(Prev, E) --> boolean_operator(Op), monom(M),{ NewExpr =.. [Op, Prev, M] }, simple_expr_tail(NewExpr, E).
 simple_expr_tail(E, E) --> [].
+
+
 
 %%%% pipe_expr -> simple_expr (">>" expr)*
 pipe_expr(E) --> simple_expr(S), pipe_expr_tail(S, E).
@@ -327,6 +331,17 @@ mult_div_op('*') --> spaces,"*", spaces, !.
 mult_div_op('/') --> spaces,"/", spaces, !.
 add_sub_op('+') --> spaces,"+", spaces, !.
 add_sub_op('-') --> spaces,"-", spaces, !.
+relational_operator('>=') --> spaces,">=", spaces, !.
+relational_operator('<=') --> spaces,"<=", spaces, !.
+relational_operator('<') --> spaces,"<", spaces, !.
+relational_operator('>') --> spaces,">", spaces, !.
+relational_operator('===') --> spaces,"===", spaces, !.
+relational_operator('==') --> spaces,"==", spaces, !.
+relational_operator('!=') --> spaces,"!=", spaces, !.
+boolean_operator('&&') --> spaces,"&&", spaces, !.
+boolean_operator('||') --> spaces,"||", spaces, !.
+
+
 pipe_op --> spaces,">>", spaces.
 arrow_op --> spaces,"->", spaces.
 point_op --> ".".
