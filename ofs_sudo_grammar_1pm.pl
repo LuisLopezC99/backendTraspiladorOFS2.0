@@ -75,6 +75,7 @@ generate_imports(Ids, IdsStr) :-
     format(atom(IdsStr), '{~s}', [InnerIdsStr]).	
 
 %%% Manejo de llamadas a pipes y ofs funcions %%
+
 generate_expression(pipe(Expr, Next), PipeStr) :-
     generate_expression(Expr, ExprStr),
     ( Next = [] ->
@@ -226,6 +227,9 @@ expr(pipe(N, A)) --> ident(N), pipe(A).
 %%%% expr -> arrow_expr
 expr(E) --> arrow_expr(E).
 
+%%%% expr -> conditional_expression
+expr(E) --> conditional_expression(E).
+
 %OFS
 ofs_expression_iteration(pipe(cal(iterate(InitialExpr, expr(IterationExpr))),Z)) --> left_bracket, "*",spaces, number(InitialExpr), comma, arrow_expr(IterationExpr), right_bracket, pipe(Z).
 ofs_expression_iteration(pipe(cal(iterate(IterId)),Z)) --> left_bracket, "*",spaces,  ident(IterId), right_bracket, pipe(Z).
@@ -234,7 +238,7 @@ ofs_expression_iteration(pipe(cal(iterate(IterId)),Z)) --> left_bracket, "*",spa
 ofs_expression(cal(filter(expr(FilterExpr)))) --> left_bracket, "?",spaces, arrow_expr(FilterExpr), right_bracket.
 ofs_expression(cal(filter(FilterId))) --> left_bracket, "?",spaces, ident(FilterId), right_bracket.
 
-ofs_expression(cal(map(expr(MapExpr)))) --> left_bracket, ">",spaces,rrow_expr(MapExpr), right_bracket.
+ofs_expression(cal(map(expr(MapExpr)))) --> left_bracket, ">",spaces,arrow_expr(MapExpr), right_bracket.
 ofs_expression(cal(map(MapId))) --> left_bracket, ">",spaces, ident(MapId), right_bracket.
 
 ofs_expression(cal(cut(N))) --> left_bracket, "!",spaces, number(N), right_bracket.
@@ -245,17 +249,24 @@ pipe([]) --> [].
 pipe(pipe(Z,A)) --> pipe_op, ofs_expression(Z), pipe(A).
 %%%% arrow_expr -> pipe_expr ("->" expr)*
 arrow_expr(E) --> pipe_expr(P), arrow_expr_tail(P, E).
-arrow_expr_tail(Prev, E) --> arrow_op, expr(Ex), { NewExpr = arrow(Prev, Ex) }, arrow_expr_tail(NewExpr, E).
+arrow_expr_tail(Prev, E) --> arrow_op, expr(Ex), { NewExpr = arrow(Prev, expr(Ex)) }, arrow_expr_tail(NewExpr, E).
 arrow_expr_tail(E, E) --> [].
+
+%%%%conditional_expression -> relational_expression "?" expression ":" expression
+conditional_expression(conditional(expr(C),expr(I),expr(E))) --> factor(C), spaces, "?", spaces, factor(I), spaces, ":",spaces, factor(E).
 
 %%%% simple_expr -> monom (("+"|"-")? monom)*
 simple_expr(E) --> monom(M), simple_expr_tail(M, E).
+simple_expr(E) --> monom(M), bool_expr_tail(M, E).
 simple_expr_tail(Prev, E) --> add_sub_op(Op), monom(M), { NewExpr =.. [Op, Prev, M] }, simple_expr_tail(NewExpr, E).
 simple_expr_tail(Prev, E) --> relational_operator(Op), monom(M), { NewExpr =.. [Op, Prev, M] }, simple_expr_tail(NewExpr, E).
 simple_expr_tail(Prev, E) --> boolean_operator(Op), monom(M),{ NewExpr =.. [Op, Prev, M] }, simple_expr_tail(NewExpr, E).
 simple_expr_tail(E, E) --> [].
 
-
+%%%% boolean_expression -> relational_expression ( boolean_operator relational_expression)*
+bool_expr_tail(Prev, E) --> relational_operator(Op), monom(M), { NewExpr =.. [Op, Prev, M] }, bool_expr_tail(NewExpr, E).
+bool_expr_tail(Prev, E) --> boolean_operator(Op), monom(M),{ NewExpr =.. [Op, Prev, M] }, bool_expr_tail(NewExpr, E).
+bool_expr_tail(E, E) -->[].
 
 %%%% pipe_expr -> simple_expr (">>" expr)*
 pipe_expr(E) --> simple_expr(S), pipe_expr_tail(S, E).
@@ -273,14 +284,15 @@ factor(literal(L)) --> literal(L).
 factor(method(L,F)) --> literal(L),point_op, factor(F).
 factor(expr_paren(E)) --> left_paren, expr(E), right_paren.
 factor(neg_expr(E)) --> "-", expr(E).
-factor(F) --> expr_list(F).
+factor(list(L,args(F))) --> ident(L), expr_list(F).
 
 %%%% cal -> ident ("(" expr_sequence? ")")?
 cal(cal(Id, Args)) --> ident(Id), left_paren, expr_sequence(Args), right_paren.
 cal(Id) --> ident(Id).
 
 %%%% expr_list -> "[" expr_sequence? "]"
-expr_list(L) --> left_bracket, optional_expr_sequence(L), right_bracket.
+expr_list([L|R]) --> left_bracket, optional_expr_sequence(L), right_bracket, expr_list(R).
+expr_list([]) --> [].
 optional_expr_sequence([]) --> [].
 optional_expr_sequence(L) --> expr_sequence(L).
 
