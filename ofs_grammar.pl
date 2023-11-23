@@ -1,4 +1,4 @@
-%%% Archivo: test_parser.pl %%%%%%%%%%%%%%%%%
+%%% Archivo: ofs_grammar.pl %%%%%%%%%%%%%%%%%
 
 
 :- use_module(library(readutil)).
@@ -6,14 +6,14 @@
 :- use_module(utils).
 :- use_module(parser).
 
-test_parser(Filename) :-
+ofs_grammar(Filename) :-
    read_file_to_codes(Filename, Codes, []),
    ofs_program(Codes, Ast),!,
    format('*** Parser of ~s was ok! ***\n', [Filename]),
    generator(Ast, JSCodeString),
    % Aquí puedes manejar la cadena JSCodeString como desees
    write(JSCodeString). % Por ejemplo, imprimirla en la consola.
-test_parser(Filename) :-
+ofs_grammar(Filename) :-
    format('*** Parser of ~s was NOT ok! ***', [Filename])
 .
 

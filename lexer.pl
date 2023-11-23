@@ -37,8 +37,8 @@ File: lexer.pl
 ]).
 
 ident(id(X)) --> [C], { char_type(C, alpha) }, ident_tail(Tail), { atom_codes(X, [C|Tail]) }.
-ident_tail([]) --> [].
 ident_tail([X|Tail]) --> [X], { member(X, [36,95]); char_type(X, alnum) }, ident_tail(Tail).
+ident_tail([]) --> [].
 
 
 const --> spaces, "const", space, spaces.
@@ -64,6 +64,7 @@ single_quote --> spaces,"'", spaces.
 double_quote --> spaces,"\"", spaces.
 mult_div_op('*') --> spaces,"*", spaces, !.
 mult_div_op('/') --> spaces,"/", spaces, !.
+mult_div_op('%') --> spaces,"%", spaces, !.
 add_sub_op('+') --> spaces,"+", spaces, !.
 add_sub_op('-') --> spaces,"-", spaces, !.
 relational_operator('>=') --> spaces,">=", spaces, !.
@@ -75,7 +76,6 @@ relational_operator('==') --> spaces,"==", spaces, !.
 relational_operator('!=') --> spaces,"!=", spaces, !.
 boolean_operator('&&') --> spaces,"&&", spaces, !.
 boolean_operator('||') --> spaces,"||", spaces, !.
-
 
 pipe_op --> spaces,">>", spaces.
 arrow_op --> spaces,"->", spaces.

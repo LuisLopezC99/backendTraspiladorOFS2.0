@@ -1,32 +1,33 @@
-%%% Archivo: ofs_sudo_grammar_1pm.pl %%%%%%%%%%%%%%%%%
-/*
-
-
-ofs_program -> statement*
-
-statement -> "const"  ident ("=" expr)? ";"?
-expr -> ident | integer
-
-ident -> [a-zA-Z_$][a-zA-Z_$0-9]* 
-integer -> ([+-])?[0-9]+
-
-null -~ semicolon
-undefined -~ undefined
-
+/* 
+University: Universidad Nacional
+School: Escuela de Informatica
+Course: Paradigmas de Programación EIF 400
+Semester: 2 Year: 2023
+Team 02-1pm 
+Members:
+Luis Lopez Castro id: 402420889
+Anderson Mora Aguero id: 115600170
+David Morales Hidalgo id: 116300616
+Alberto Aguero Herdocia id: 118450651
+Project: OneFlowStream (OFS)
+SubProyect: BackEndTraspiler
+File: lexer.pl 
 */
-%%%%%%%%%%%%%%%%%%%%%%%%% PROGRAM AST %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-:- use_module(utils).
-:- use_module(parser).
 
-ofs_program(OFSCodes, AstOFSPure) :-
-    ofs_parser(AstOFSImpure, OFSCodes, []),
-	purify(AstOFSImpure, AstOFSPure)
-.
-
-purify(AstOFSImpure, AstOFSPure) :-
-   eliminate_null(AstOFSImpure, AstOFSPure)
-.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% GENERATOR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+:- module(generator, [
+    formated_time/1,
+    options/2,
+    generator/2,
+    write_ast/1,
+    generate_statement/1,
+    generate_imports/2,
+    generate_expression/2,
+    write_unrecognized_statement/1,
+    generate_line_comment/1
+]).
+
+
 formated_time(FormattedTimeStamp) :- 
     get_time(TimeStamp),
     format_time(atom(FormattedTimeStamp), '%Y-%m-%d %T', TimeStamp).
@@ -62,7 +63,7 @@ generate_statement(declaration(Type, id(I), Expr)) :-
 
 generate_statement(import(Imports, From)) :-
     generate_imports(Imports, ImportsStr),
-    format(atom(ImportStr), 'import ~s from "~s";\n', [ImportsStr, From]),
+    format(atom(ImportStr), 'import ~s from "~s"', [ImportsStr, From]),
     write(ImportStr).
 
 %%%%%% Caso por defecto para manejar AST no reconocidos %%%%%
@@ -113,16 +114,20 @@ generate_expression(iterate(int(N), expr(Last)), IterateStr) :-
 	number_string(N, NStr),
     generate_expression(Last, LastStr),
     format(atom(IterateStr), 'iterate(~s, ~s)', [NStr, LastStr]).
+		
 	
-generate_expression(filter(Expr), FilterStr) :-
+generate_expression(filter(expr(Expr)), FilterStr) :-
     generate_expression(Expr, ExprStr),
     format(atom(FilterStr), 'filter(~s)', [ExprStr]).
 	
-generate_expression(cut(Arg), CutStr) :-
-    generate_expression(Arg, ArgStr),
-    format(atom(CutStr), 'cut(~s)', [ArgStr]).
+generate_expression(cut(int(N)), CutStr) :-
+    number_string(N, NStr),
+    format(atom(CutStr), 'cut(~s)', [NStr]).
 	
-generate_expression(map(Expr), MapStr) :-
+generate_expression(cut(id(Id)), CutStr) :-
+    format(atom(CutStr), 'cut(~s)', [Id]).
+	
+generate_expression(map(expr(Expr)), MapStr) :-
     generate_expression(Expr, ExprStr),
     format(atom(MapStr), 'map(~s)', [ExprStr]).	
 
@@ -207,5 +212,3 @@ write_unrecognized_statement(S) :-
 
 generate_line_comment(comment(Comment)) :-
     format('// ~s\n', [Comment]).
-
-
