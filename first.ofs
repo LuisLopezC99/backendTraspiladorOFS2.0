@@ -1,18 +1,33 @@
-//let a = text.a(n+2);
+let a = text.a(n+2);
 //console.a.b.c(a.b);
 //import process from 'node:process';
-//it -> n + 1;
+it -> n + 1;
 //[* 0, n -> n + 1]  >> [! 50] >> [? n -> n/2];
-[* 0, n -> n + 1] >> [? printIt];
+[* 0, test];
+//[* 0, n -> n + 1] >> [? printIt];
 //test >> [? printIt];
 //const some_list = [1, [2, 3, [4]], 'hola'];
+const a = [2][3];
 
 
 /*
-
-expr(pipe(iterate(int(0),expr(id(lamda))),[]))
-expr(pipe(iterate(int(0),expr(arrow(id(n),expr(id(n)+literal(int(1))))))
-iterate(0,lamda);
+AST:
+expr(
+	pipe(
+		iterate(
+			int(0),
+			expr(
+				arrow(
+				id(n),
+				expr(id(n)+literal(int(1)))
+				)
+			)
+		),
+		pipe(
+			filter(expr(id(printIt))),[]
+		)
+	)
+)
 
 AST:
 expr(
