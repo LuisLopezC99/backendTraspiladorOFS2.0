@@ -250,7 +250,7 @@ pipe([]) --> [].
 pipe(pipe(Z,A)) --> pipe_op, ofs_expression(Z), pipe(A).
 %%%% arrow_expr -> pipe_expr ("->" expr)*
 arrow_expr(E) --> pipe_expr(P), arrow_expr_tail(P, E).
-arrow_expr_tail(Prev, E) --> arrow_op, expr(Ex), { NewExpr = arrow(Prev, Ex) }, arrow_expr_tail(NewExpr, E).
+arrow_expr_tail(Prev, E) --> arrow_op, expr(Ex), { NewExpr = arrow(Prev, expr(Ex)) }, arrow_expr_tail(NewExpr, E).
 arrow_expr_tail(E, E) --> [].
 
 %%%%conditional_expression -> relational_expression "?" expression ":" expression
@@ -285,14 +285,15 @@ factor(literal(L)) --> literal(L).
 factor(method(L,F)) --> literal(L),point_op, factor(F).
 factor(expr_paren(E)) --> left_paren, expr(E), right_paren.
 factor(neg_expr(E)) --> "-", expr(E).
-factor(F) --> expr_list(F).
+factor(list(L,args(F))) --> ident(L), expr_list(F).
 
 %%%% cal -> ident ("(" expr_sequence? ")")?
 cal(cal(Id, Args)) --> ident(Id), left_paren, expr_sequence(Args), right_paren.
 cal(Id) --> ident(Id).
 
 %%%% expr_list -> "[" expr_sequence? "]"
-expr_list(L) --> left_bracket, optional_expr_sequence(L), right_bracket.
+expr_list([L|R]) --> left_bracket, optional_expr_sequence(L), right_bracket, expr_list(R).
+expr_list([]) --> [].
 optional_expr_sequence([]) --> [].
 optional_expr_sequence(L) --> expr_sequence(L).
 
