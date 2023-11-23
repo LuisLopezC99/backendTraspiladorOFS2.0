@@ -75,6 +75,7 @@ generate_imports(Ids, IdsStr) :-
     format(atom(IdsStr), '{~s}', [InnerIdsStr]).	
 
 %%% Manejo de llamadas a pipes y ofs funcions %%
+
 generate_expression(pipe(Expr, Next), PipeStr) :-
     generate_expression(Expr, ExprStr),
     ( Next = [] ->
