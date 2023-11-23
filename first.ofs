@@ -1,33 +1,53 @@
 //let a = text.a(n+2);
 //console.a.b.c(a.b);
-//const printIt = it -> console.log(it);
-[* 0, n -> n + 1]  >> [! 50] >> [? n -> n/2];
-//const nats = [> n -> n];
+it -> n + 1;
+//[* 0, n -> n + 1]  >> [! 50] >> [? n -> n/2];
+//const nats = [* 0, n -> n + 1];
+//test >> [? printIt];
 //const some_list = [1, [2, 3, [4]], 'hola'];
 
 
 /*
+AST:
+expr(
+	pipe(
+		id(test),
+		pipe(
+			cal(
+				filter(id(printIt))
+			),
+			[]
+		)
+	)
+)
+JS:
+test.filter(printIt);
 
+AST:
 expr(
 	pipe(
 		cal(
 			iterate(
 				int(0),
-				id(n),
-				expr(
-					id(n)+literal(int(1))
-				)
+					expr(
+						arrow(
+							id(n),
+							expr(
+								id(n)+literal(int(1))
+							)
+						)
+					)
 			)
 		),
 		[]
 	)
 )
-
+JS:
 iterate(0,n => n + 1);
 
 
 
-
+AST:
 expr(
 	pipe(
 		cal(
@@ -41,11 +61,11 @@ expr(
 		)
 	)
 )
-
+JS:
 iterate(0,n => n + 1).cut(50);
 
 
-
+AST:
 expr(
 	pipe(
 		cal(
@@ -71,12 +91,37 @@ expr(
 		)
 	)
 )
-
+JS:
 iterate(0,n => n + 1).cut(50).filter(n => n/2);
 
 
 
+AST:
+declaration(
+	const,id(nats2),
+	pipe(
+		id(nats),
+		pipe(
+			cal(
+				map(
+					id(n),
+					expr(id(n))
+				)
+			),
+			[]
+		)
+	)
+)
+JS:
+const nats2 = nats.map( n -> n );
+
+
+
+
 falta generator de lista
+falta if funcional
+falta not
+falta identificador[1];
 
 */
 
