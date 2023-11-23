@@ -106,7 +106,7 @@ generate_expression(Expr, ExprStr) :-
     generate_expression(Left, LeftStr),
     generate_expression(Right, RightStr),
     ( Op = arrow -> % Añadido manejo de expresiones de tipo flecha
-        format(atom(ExprStr), '~s --> ~s', [LeftStr, RightStr])
+        format(atom(ExprStr), '~s => ~s', [LeftStr, RightStr])
     ; format(atom(ExprStr), '~s ~s ~s', [LeftStr, Op, RightStr]) ).
 
 
