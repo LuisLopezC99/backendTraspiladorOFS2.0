@@ -48,13 +48,15 @@ write_ast(StatementList) :-
 
 % Generación de diferentes tipos de declaraciones y expresiones
 
+generate_statement(expr(Expr)) :-
+    generate_expression(Expr, ExprStr),
+    format('~s;\n', [ExprStr]).
+
 generate_statement(declaration(Type, id(I), Expr)) :-
     generate_expression(Expr, ExprStr),
     format('~s ~s = ~s;\n', [Type, I, ExprStr]).
 	
-generate_statement(expr(Expr)) :-
-    generate_expression(Expr, ExprStr),
-    format('~s;\n', [ExprStr]).
+
 
 generate_statement(import(Imports, From)) :-
     generate_imports(Imports, ImportsStr),
@@ -76,6 +78,7 @@ generate_imports(Ids, IdsStr) :-
 
 %%% Manejo de llamadas a pipes y ofs funcions %%
 
+
 generate_expression(pipe(Expr, Next), PipeStr) :-
     generate_expression(Expr, ExprStr),
     ( Next = [] ->
@@ -83,12 +86,12 @@ generate_expression(pipe(Expr, Next), PipeStr) :-
     ; Next = pipe(_, _) ->
         generate_expression(Next, NextStr),
         format(atom(PipeStr), '~s.~s', [ExprStr, NextStr])
-    ).	
+    ).		
 	
-generate_expression(iterate(First, Last), IterateStr) :-
-    generate_expression(First, FirstStr),
+generate_expression(iterate(int(N), expr(Last)), IterateStr) :-
+	number_string(N, NStr),
     generate_expression(Last, LastStr),
-    format(atom(IterateStr), 'iterate(~s, ~s)', [FirstStr, LastStr]).
+    format(atom(IterateStr), 'iterate(~s, ~s)', [NStr, LastStr]).
 	
 generate_expression(filter(Expr), FilterStr) :-
     generate_expression(Expr, ExprStr),
@@ -117,12 +120,14 @@ generate_expression(method(Object, MethodCall), MethodStr) :-
     MethodCall = cal(_, _),
     generate_expression(Object, ObjectStr),
     generate_method_call(MethodCall, MethodCallStr),
-    format(atom(MethodStr), '~s.~s', [ObjectStr, MethodCallStr]).
+    format(atom(MethodStr), '~s.~s', [ObjectStr, MethodCallStr]).	
+	
 	
 generate_expression(cal(Method, Args), CallStr) :-
     generate_expression(Method, MethodStr),
     generate_arguments(Args, ArgsStr),
     format(atom(CallStr), '~s(~s)', [MethodStr, ArgsStr]).
+
 	
 generate_expression(id(X), X) :- !.
 
@@ -137,6 +142,11 @@ generate_expression(Expr, ExprStr) :-
     ( Op = arrow -> % Añadido manejo de expresiones de tipo flecha
         format(atom(ExprStr), '~s => ~s', [LeftStr, RightStr])
     ; format(atom(ExprStr), '~s ~s ~s', [LeftStr, Op, RightStr]) ).
+
+
+generate_expression(arrow(id(Ident), expr(Body)), ArrowStr) :-
+    generate_expression(Body, BodyStr),
+    format(atom(ArrowStr), '~s => ~s', [Ident, BodyStr]).
 
 
 generate_expression(Expr, ExprStr) :-
@@ -231,18 +241,18 @@ expr(E) --> arrow_expr(E).
 expr(E) --> conditional_expression(E).
 
 %OFS
-ofs_expression_iteration(pipe(cal(iterate(InitialExpr, expr(IterationExpr))),Z)) --> left_bracket, "*",spaces, number(InitialExpr), comma, arrow_expr(IterationExpr), right_bracket, pipe(Z).
-ofs_expression_iteration(pipe(cal(iterate(IterId)),Z)) --> left_bracket, "*",spaces,  ident(IterId), right_bracket, pipe(Z).
+ofs_expression_iteration(pipe(iterate(InitialExpr, expr(IterationExpr)),Z)) --> left_bracket, "*",spaces, number(InitialExpr), comma, arrow_expr(IterationExpr), right_bracket, pipe(Z).
+ofs_expression_iteration(pipe(iterate(IterId),Z)) --> left_bracket, "*",spaces,  ident(IterId), right_bracket, pipe(Z).
 
 
-ofs_expression(cal(filter(expr(FilterExpr)))) --> left_bracket, "?",spaces, arrow_expr(FilterExpr), right_bracket.
-ofs_expression(cal(filter(FilterId))) --> left_bracket, "?",spaces, ident(FilterId), right_bracket.
+ofs_expression(filter(expr(FilterExpr))) --> left_bracket, "?",spaces, arrow_expr(FilterExpr), right_bracket.
+ofs_expression(filter(FilterId)) --> left_bracket, "?",spaces, ident(FilterId), right_bracket.
 
-ofs_expression(cal(map(expr(MapExpr)))) --> left_bracket, ">",spaces,arrow_expr(MapExpr), right_bracket.
-ofs_expression(cal(map(MapId))) --> left_bracket, ">",spaces, ident(MapId), right_bracket.
+ofs_expression(map(expr(MapExpr))) --> left_bracket, ">",spaces,arrow_expr(MapExpr), right_bracket.
+ofs_expression(map(MapId)) --> left_bracket, ">",spaces, ident(MapId), right_bracket.
 
-ofs_expression(cal(cut(N))) --> left_bracket, "!",spaces, number(N), right_bracket.
-ofs_expression(cal(cut(N))) --> left_bracket, "!",spaces, ident(N), right_bracket.
+ofs_expression(cut(N)) --> left_bracket, "!",spaces, number(N), right_bracket.
+ofs_expression(cut(N)) --> left_bracket, "!",spaces, ident(N), right_bracket.
 
 
 pipe([]) --> [].
