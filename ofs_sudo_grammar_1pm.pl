@@ -64,9 +64,11 @@ generate_statement(import(Imports, From)) :-
     write(ImportStr).
 
 %%%%%% Caso por defecto para manejar AST no reconocidos %%%%%
+
+
 generate_statement(S) :-
     write_unrecognized_statement(S).
-	
+
 
 generate_imports([Id], IdStr) :-
     generate_expression(Id, IdStr), !.
@@ -76,6 +78,19 @@ generate_imports(Ids, IdsStr) :-
     atomic_list_concat(IdStrs, ', ', InnerIdsStr),
     format(atom(IdsStr), '{~s}', [InnerIdsStr]).	
 
+%%
+generate_expression(list(id(I), args(R)), ExprStr) :-
+	process_args(R, Cadena),
+    format(atom(ExprStr), ' ~s~s ', [I,Cadena]).
+	
+%%
+generate_expression(conditional(expr(C), expr(I), expr(E)), ExprStr) :-
+    generate_expression(C, CExprStr),
+	generate_expression(I, IExprStr),
+	generate_expression(E, EExprStr),
+    format(atom(ExprStr), ' ~s? ~s : ~s', [CExprStr,IExprStr,EExprStr]).
+	
+	
 %%% Manejo de llamadas a pipes y ofs funcions %%
 
 
@@ -155,10 +170,13 @@ generate_expression(Expr, ExprStr) :-
     generate_expression(Right, RightStr),
     format(atom(ExprStr), '~s ~s ~s', [LeftStr, Op, RightStr]).	
 	
+	
 % Generación de expresiones con paréntesis
 generate_expression(expr_paren(InnerExpr), ExprStr) :-
     generate_expression(InnerExpr, InnerExprStr),
     format(atom(ExprStr), ' ( ~s )', [InnerExprStr]).
+	
+
 	
 	
 
@@ -240,6 +258,7 @@ expr(E) --> arrow_expr(E).
 %%%% expr -> conditional_expression
 expr(E) --> conditional_expression(E).
 
+expr(declaration(Ident, E)) --> ident(Ident), assignment, expr(E).
 %OFS
 ofs_expression_iteration(pipe(iterate(InitialExpr, expr(IterationExpr)),Z)) --> left_bracket, "*",spaces, number(InitialExpr), comma, arrow_expr(IterationExpr), right_bracket, pipe(Z).
 ofs_expression_iteration(pipe(iterate(IterId),Z)) --> left_bracket, "*",spaces,  ident(IterId), right_bracket, pipe(Z).
@@ -263,7 +282,7 @@ arrow_expr_tail(Prev, E) --> arrow_op, expr(Ex), { NewExpr = arrow(Prev, expr(Ex
 arrow_expr_tail(E, E) --> [].
 
 %%%%conditional_expression -> relational_expression "?" expression ":" expression
-conditional_expression(conditional(expr(C),expr(I),expr(E))) --> factor(C), spaces, "?", spaces, factor(I), spaces, ":",spaces, factor(E).
+conditional_expression(conditional(expr(C),expr(I),expr(E))) --> factor(C), spaces, "?", spaces, expr(I), spaces, ":",spaces, expr(E).
 
 %%%% simple_expr -> monom (("+"|"-")? monom)*
 simple_expr(E) --> monom(M), simple_expr_tail(M, E).
@@ -320,3 +339,19 @@ Ast = [const(x, int(666)), const(x, undefined)]
 eliminate_null([], []).
 eliminate_null([null | R], RWN) :- !, eliminate_null(R, RWN).
 eliminate_null([S | R], [S | RWN] ) :- !, eliminate_null(R, RWN).
+
+% Método para procesar la estructura y construir la cadena resultante
+process_args(Args, Result) :-
+    process_args_list(Args, ResultList),
+    atomic_list_concat(ResultList, '', Result).
+
+% Predicado auxiliar para procesar una lista de argumentos
+process_args_list([], []).
+process_args_list([Arg|Rest], [Value|Result]) :-
+    process_arg(Arg, Value),
+    process_args_list(Rest, Result).
+
+% Predicado auxiliar para procesar un argumento
+process_arg([literal(int(Value))], ValueStr) :-
+    atomic_list_concat(['[', Value, ']'], ValueStr).
+process_arg(_, '').
