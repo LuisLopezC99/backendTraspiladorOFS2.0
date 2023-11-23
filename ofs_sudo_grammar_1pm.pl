@@ -117,9 +117,8 @@ generate_expression(cut(Arg), CutStr) :-
 	
 generate_expression(map(Expr), MapStr) :-
     generate_expression(Expr, ExprStr),
-    format(atom(MapStr), 'map(~s)', [ExprStr]).
-	
-	
+    format(atom(MapStr), 'map(~s)', [ExprStr]).	
+
 % Manejo de llamadas a métodos
 generate_expression(method(Object, id(Method)), MethodStr) :-
     generate_expression(Object, ObjectStr),

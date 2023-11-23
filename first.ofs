@@ -1,14 +1,57 @@
 //let a = text.a(n+2);
 //console.a.b.c(a.b);
-import process from 'node:process';
-it -> n + 1;
+//import process from 'node:process';
+//it -> n + 1;
 //[* 0, n -> n + 1]  >> [! 50] >> [? n -> n/2];
-[* 0, n -> n + 1];
+[* 0, lamda];
 //test >> [? printIt];
 //const some_list = [1, [2, 3, [4]], 'hola'];
 
 
 /*
+AST:
+expr(
+	pipe(
+		cal(
+			iterate(
+				int(0),
+				expr(
+					arrow(
+						id(n),
+						id(n)+literal(int(1))
+					)
+				)
+			)
+		),
+		[]
+	)
+)
+iterate(0,n => n + 1);
+
+AST:
+expr(
+	pipe(
+		cal(
+			iterate(
+				int(0),
+				expr(
+					arrow(
+						id(n),
+						expr(
+							id(n)+literal(int(1))
+						)
+					)
+				)
+			)
+		),
+		[]
+	)
+)
+JS:
+iterate(0,n => n + 1);
+
+
+
 AST:
 expr(
 	pipe(
@@ -23,30 +66,6 @@ expr(
 )
 JS:
 test.filter(printIt);
-
-AST:
-expr(
-	pipe(
-		cal(
-			iterate(
-				int(0),
-					expr(
-						arrow(
-							id(n),
-							expr(
-								id(n)+literal(int(1))
-							)
-						)
-					)
-			)
-		),
-		[]
-	)
-)
-JS:
-iterate(0,n => n + 1);
-
-
 
 AST:
 expr(
@@ -117,6 +136,24 @@ JS:
 const nats2 = nats.map( n -> n );
 
 
+
+
+expr(
+	pipe(
+		cal(
+			iterate(
+				int(0),
+				expr(
+					arrow(
+						id(n),
+						id(n)+literal(int(1))
+					)
+				)
+			)
+		),
+		[]
+	)
+)
 
 
 falta generator de lista
