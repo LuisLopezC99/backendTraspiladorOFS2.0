@@ -15,6 +15,7 @@ undefined -~ undefined
 
 */
 %%%%%%%%%%%%%%%%%%%%%%%%% PROGRAM AST %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+:- use_module(lexer).
 ofs_program(OFSCodes, AstOFSPure) :-
     ofs_parser(AstOFSImpure, OFSCodes, []),
 	purify(AstOFSImpure, AstOFSPure)
@@ -72,6 +73,34 @@ generate_imports(Ids, IdsStr) :-
     findall(IdStr, (member(Id, Ids), generate_expression(Id, IdStr)), IdStrs),
     atomic_list_concat(IdStrs, ', ', InnerIdsStr),
     format(atom(IdsStr), '{~s}', [InnerIdsStr]).	
+
+%%% Manejo de llamadas a pipes y ofs funcions %%
+generate_expression(pipe(Expr, Next), PipeStr) :-
+    generate_expression(Expr, ExprStr),
+    ( Next = [] ->
+        PipeStr = ExprStr
+    ; Next = pipe(_, _) ->
+        generate_expression(Next, NextStr),
+        format(atom(PipeStr), '~s.~s', [ExprStr, NextStr])
+    ).	
+	
+generate_expression(iterate(First, Last), IterateStr) :-
+    generate_expression(First, FirstStr),
+    generate_expression(Last, LastStr),
+    format(atom(IterateStr), 'iterate(~s, ~s)', [FirstStr, LastStr]).
+	
+generate_expression(filter(Expr), FilterStr) :-
+    generate_expression(Expr, ExprStr),
+    format(atom(FilterStr), 'filter(~s)', [ExprStr]).
+	
+generate_expression(cut(Arg), CutStr) :-
+    generate_expression(Arg, ArgStr),
+    format(atom(CutStr), 'cut(~s)', [ArgStr]).
+	
+generate_expression(map(Expr), MapStr) :-
+    generate_expression(Expr, ExprStr),
+    format(atom(MapStr), 'map(~s)', [ExprStr]).
+	
 	
 % Manejo de llamadas a métodos
 generate_expression(method(Object, id(Method)), MethodStr) :-
