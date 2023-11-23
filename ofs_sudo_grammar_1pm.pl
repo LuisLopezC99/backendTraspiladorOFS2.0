@@ -15,6 +15,7 @@ undefined -~ undefined
 
 */
 %%%%%%%%%%%%%%%%%%%%%%%%% PROGRAM AST %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+:- use_module(lexer).
 ofs_program(OFSCodes, AstOFSPure) :-
     ofs_parser(AstOFSImpure, OFSCodes, []),
 	purify(AstOFSImpure, AstOFSPure)
@@ -298,93 +299,3 @@ Ast = [const(x, int(666)), const(x, undefined)]
 eliminate_null([], []).
 eliminate_null([null | R], RWN) :- !, eliminate_null(R, RWN).
 eliminate_null([S | R], [S | RWN] ) :- !, eliminate_null(R, RWN).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%% TOKENIZER = LEXER %%%%%%%%%%%%%%%%%%%%%
-
-ident(id(X)) --> [C], { char_type(C, alpha) }, ident_tail(Tail), { atom_codes(X, [C|Tail]) }.
-ident_tail([]) --> [].
-ident_tail([X|Tail]) --> [X], { member(X, [36,95]); char_type(X, alnum) }, ident_tail(Tail).
-
-
-const --> spaces, "const", space, spaces.
-let --> spaces, "let", space, spaces.
-var --> spaces, "var", space, spaces.
-
-
-
-% Palabras clave para import_statement
-import --> spaces, "import", spaces.
-from --> spaces, "from", spaces.
-
-assignment --> spaces, "=", spaces.
-semicolon --> spaces, ";", spaces.
-comma --> spaces, ",", spaces.
-left_bracket --> spaces, "[", spaces.
-right_bracket --> spaces, "]", spaces.
-left_curly --> spaces, "{", spaces.
-right_curly --> spaces, "}", spaces.
-left_paren --> spaces, "(", spaces.
-right_paren --> spaces, ")", spaces.
-single_quote --> spaces,"'", spaces.
-double_quote --> spaces,"\"", spaces.
-mult_div_op('*') --> spaces,"*", spaces, !.
-mult_div_op('/') --> spaces,"/", spaces, !.
-add_sub_op('+') --> spaces,"+", spaces, !.
-add_sub_op('-') --> spaces,"-", spaces, !.
-relational_operator('>=') --> spaces,">=", spaces, !.
-relational_operator('<=') --> spaces,"<=", spaces, !.
-relational_operator('<') --> spaces,"<", spaces, !.
-relational_operator('>') --> spaces,">", spaces, !.
-relational_operator('===') --> spaces,"===", spaces, !.
-relational_operator('==') --> spaces,"==", spaces, !.
-relational_operator('!=') --> spaces,"!=", spaces, !.
-boolean_operator('&&') --> spaces,"&&", spaces, !.
-boolean_operator('||') --> spaces,"||", spaces, !.
-
-
-pipe_op --> spaces,">>", spaces.
-arrow_op --> spaces,"->", spaces.
-point_op --> ".".
-
-space --> " ";"\t";"\n";"\r".
-spaces --> space, spaces.
-spaces --> [].
-
-literal(Id) --> ident(Id).
-literal(Num) --> number(Num).
-literal(Bool) --> boolean(Bool).
-literal(null) --> "null".
-literal(undefined) --> "undefined".
-literal(str(Str)) --> string_literal(Str).
-
-
-string_literal(Str) --> single_quoted_string(Str).
-string_literal(Str) --> double_quoted_string(Str).
-
-single_quoted_string(Str) --> single_quote, string_chars(StrChars), single_quote, { atom_chars(Str, StrChars) }.
-double_quoted_string(Str) --> double_quote, string_chars(StrChars), double_quote, { atom_chars(Str, StrChars) }.
-
-
-string_chars([Char|Chars]) --> [Char], { Char \= '\'' }, string_chars(Chars).
-string_chars([]) --> [].
-
-number(int(N)) --> optional_sign(Sign), digits(Ds), 
-                   { maplist(char_code, CharsDs, Ds), 
-                     (Sign = '', number_chars(N, CharsDs);
-                      Sign \= '', number_chars(N, [Sign|CharsDs])) }.
-number(int(N)) --> digits(Ds), 
-                   { maplist(char_code, CharsDs, Ds), 
-                     number_chars(N, CharsDs) }.
-
-optional_sign('-') --> spaces,"-", spaces, !.
-optional_sign('+') --> spaces,"+", spaces, !.
-optional_sign('') --> [].
-
-digits([D|T]) --> digit(D), digits(T).
-digits([D]) --> digit(D).
-
-digit(D) --> [D], { char_type(D, digit) }.
-
-
-boolean(true) --> "true".
-boolean(false) --> "false".
