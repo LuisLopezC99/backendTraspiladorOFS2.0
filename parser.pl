@@ -85,6 +85,7 @@ right_side(E) --> assignment, expr(E),semicolon.
 right_side(undefined) --> [].
 
 % expr( I ) --> ident(I).
+expr(list(args(ListExpr))) --> expr_list(ListExpr).
 % expr(Num) --> number(Num).
 expr(E) --> simple_expr(E).
 
@@ -155,13 +156,17 @@ factor(expr_paren(E)) --> left_paren, expr(E), right_paren.
 factor(neg_expr(E)) --> "-", expr(E).
 factor(list(L,args(F))) --> ident(L), expr_list(F).
 
+
 %%%% cal -> ident ("(" expr_sequence? ")")?
 cal(cal(Id, Args)) --> ident(Id), left_paren, expr_sequence(Args), right_paren.
 cal(Id) --> ident(Id).
 
 %%%% expr_list -> "[" expr_sequence? "]"
-expr_list([L|R]) --> left_bracket, optional_expr_sequence(L), right_bracket, expr_list(R).
+expr_list([L|R]) --> left_bracket, optional_expr_sequence(L), right_bracket, { L \= [] }, expr_list(R),!.
+expr_list([L]) --> left_bracket, optional_expr_sequence(L), right_bracket, { L = [] }, !.
 expr_list([]) --> [].
+
+
 optional_expr_sequence([]) --> [].
 optional_expr_sequence(L) --> expr_sequence(L).
 

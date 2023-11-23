@@ -85,6 +85,10 @@ generate_expression(list(id(I), args(R)), ExprStr) :-
 	process_args(R, Cadena),
     format(atom(ExprStr), ' ~s~s ', [I,Cadena]).
 	
+generate_expression(list(args(R)), ExprStr) :-
+	process_args(R, Cadena),
+    format(atom(ExprStr), ' ~s ', [Cadena]).
+	
 %%
 generate_expression(conditional(expr(C), expr(I), expr(E)), ExprStr) :-
     generate_expression(C, CExprStr),
